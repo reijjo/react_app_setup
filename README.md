@@ -1,4 +1,4 @@
-# Just a ready setups for react projects
+# Just ready setups for react projects
 ## basic_app
 * Really basic stuff:
  * client folder: 'npm start' to run frontend (http://localhost:3000)
