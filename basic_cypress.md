@@ -17,16 +17,20 @@ npm install --save-dev cypress
 }
 ```
 
-## BACKEND
+<!-- ## BACKEND -->
+
+* You must to have the project up and running
 
 # How to:
 ## Frontend
+* open a new terminal on the frontend folder
 * npm run cypress:open
-* new window pops upp and choose E2E Testing => Continue => Choose your browser => Create new spec => cypress/e2e/test_app.cy.js => Close the test 'Great! The spec was successfully added'
+* new window pops up and choose E2E Testing => Continue => Choose your browser => Create new spec => cypress/e2e/test_app.cy.js => Close the test 'Great! The spec was successfully added'
 * Use VS Code for testing
 ### cypress/e2e/test.cy.js
 ```js
-describe('Simple Test '), function() {
+/* eslint-disable no-undef */
+describe('Simple Test ', function() {
 	it('front page can be opened', function() {
 		cy.visit('http://localhost:3000')
 		cy.contains('HELLO')
@@ -39,7 +43,7 @@ describe('Simple Test '), function() {
 			expect(response.body).to.eq('HELLO FROM THE BACKEND!?!?')
 		})
 	})
-}
+})
 ```
 
 * run the test by clicking the test name in cypress client window (one of those windows what just popped up)
