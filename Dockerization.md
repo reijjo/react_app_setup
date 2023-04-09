@@ -14,7 +14,7 @@ services:
 		depends_on:
 			- db
 		env_file:
-			- .env
+			- ./server/.env
 		environment:
 			WAIT_HOSTS: db:5432
 		ports:
@@ -41,7 +41,41 @@ services:
 			- "host.docker.internal:host-gateway"
 		command: npm start
 
+	db:
+		container_name: MY_DATABASE
+		image: postgres
+		restart: always
+		env_file:
+      - ./server/.env
+#   environment:
+#     POSTGRES_USER: myUsername
+#     POSTGRES_PASSWORD: myPassword
+#     POSTGRES_DB: myProject
+		volumes:
+			- ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+		ports:
+			-  5432:5432
 
+	pgadmin:
+		container_name: pgAdmin
+		image: dpage/pgadmin4
+		restart: always
+		env_file:
+      - ./server/.env
+		environment:
+#     PGADMIN_DEFAULT_EMAIL: email@email.com
+#     PGADMIN_DEFAULT_PASSWORD: myPassword
+			GUNICORN_ACCESS_LOGFILE: '/dev/null'
+		ports:
+			- 8080:80
+		volumes:
+			- ./db/servers.json:/pgadmin4/servers.json
+		logging:
+			driver: none
+
+networks:
+  default:
+    name: my_network
 
 ```
 
@@ -55,6 +89,7 @@ docker volume prune -f
 ```
 It's good to run the script 'sh dClean.sh' before docker-compose up if you made some bigger changes to the project
 
+
 ### Set database up
 * mkdir db
 
@@ -67,7 +102,7 @@ It's good to run the script 'sh dClean.sh' before docker-compose up if you made 
 				"Name": "myProject",
 				"Group": "Server Group 1",
 				"Port": 5432,
-				"Username": "username",
+				"Username": "myUsername",
 				"Host": "db",
 				"SSLMode": "prefer",
 				"MaintenanceDB": "myProject"
@@ -75,6 +110,9 @@ It's good to run the script 'sh dClean.sh' before docker-compose up if you made 
 		}
 }
 ```
+* Make sure that the "Name" and "MaintenanceDB" are the same than POSTGRES_DB in your server/.env file
+* Make sure that "Username" is the same than POSTGRES_USER in your server/.env file
+
 #### Create database tables
 * touch init.sql
 ```sql
@@ -148,11 +186,28 @@ npm install pg
 
 ### Files
 
+### .env
+```
+# PostgreSQL database credentials
+POSTGRES_USER=myUsername
+POSTGRES_PASSWORD=myPassword
+POSTGRES_DB=myProject
+PGADMIN_DEFAULT_EMAIL=your@email.com
+PGADMIN_DEFAULT_PASSWORD=myPassword
+
+PGHOST=db
+PGPORT=5432
+
+# Port
+PORT=3001
+```
+
+
 #### app.js
 * add this:
 ```js
 //...
-const db_conn = require('./utils/dbConnection)
+const db_conn = require('./utils/dbConnection')
 const { connectDB } = db_conn
 connectDB()
 //...
@@ -161,16 +216,18 @@ connectDB()
 #### utils/config.js
 * add database stuff
 ```js
-//...
+require('dotenv').config()
+
 let PORT = process.env.PORT
-let PGUSER = process.env.PGUSER
+
+let POSTGRES_USER = process.env.POSTGRES_USER
+let POSTGRES_DB = process.env.POSTGRES_DB
+let PGADMIN_DEFAULT_PASSWORD = process.env.PGADMIN_DEFAULT_PASSWORD
 let PGHOST = process.env.PGHOST
-let PGDATABASE = process.env.PGDATABASE
-let PGPASSWORD = process.env.PGPASSWORD
 let PGPORT = process.env.PGPORT
 
 module.exports = {
-	PORT, PGUSER, PGHOST, PGDATABASE, PGPASSWORD, PGPORT
+	PORT, POSTGRES_USER, PGHOST, POSTGRES_DB, PGADMIN_DEFAULT_PASSWORD, PGPORT
 }
 ```
 #### utils/dbConnection.js
@@ -179,10 +236,10 @@ const config = require('./config')
 const { Pool } = require('pg')
 
 const pool = new Pool({
-	user: config.PGUSER,
+	user: config.POSTGRES_USER,
 	host: config.PGHOST,
-	database: config.PGDATABASE,
-	password: config.PGPASSWORD,
+	database: config.POSTGRES_DB,
+	password: config.PGADMIN_DEFAULT_PASSWORD,
 	port: config.PGPORT
 })
 
@@ -194,7 +251,7 @@ const connectDB = () => {
 			setTimeout(connectDB, 5000)
 		}
 		else {
-			console.log(`Connected to database ${config.PGDATABASE}`)
+			console.log(`Connected to database ${config.POSTGRES_DB}`)
 		}
 	})
 }
@@ -218,16 +275,9 @@ module.exports = {
 ```
 #### server/.env
 ```
-PGDATABASE=YOUR_PROJECT_NAME
+POSTGRES_DB=YOUR_PROJECT_NAME
 ```
-#### docker-compose.yml
-```yml
-# ...
-db:
-	environment:
-		POSTGRES_DB: YOUR_PROJECT_NAME
-# ...
-```
+
 
 ### Change username:
 #### db/servers.json
@@ -238,32 +288,14 @@ db:
 ```
 #### server/.env
 ```
-PGUSER=YOUR_USERNAME
+POSTGRES_USER=YOUR_USERNAME
 ```
-#### docker-compose.yml
-```yml
-# ...
-db:
-	environment:
-		POSTGRES_USER: YOUR_USERNAME
-# ...
-```
+
 
 ### Change password:
 #### server/.env
 ```
-PGPASSWORD=YOUR_PASSWORD
-```
-#### docker-compose.yml
-```yml
-# ...
-db:
-	environment:
-		POSTGRES_PASSWORD: YOUR_PASSWORD
-# ...
-pgadmin:
-	environment:
-		PGADMIN_DEFAULT_PASSWORD: YOUR_PASSWORD
+POSTGRES_PASSWORD=YOUR_PASSWORD
 ```
 
 ### Change email/container/networkname:
@@ -279,14 +311,14 @@ services:
 	db:
 		container_name: YOUR_DATABASE_CONTAINER_NAME
 # ...
-	pgadmin:
-		container_name: YOUR_PGADMIN_CONTAINER_NAME
-		environment:
-			PGADMIN_DEFAULT_EMAIL: YOUR@EMAIL.COM
-# ...
 networks:
 	default:
 		name: YOUR_NETWORK_NAME
+```
+
+#### server/.env
+```
+PGADMIN_DEFAULT_EMAIL=YOUR@EMAIL.COM
 ```
 
 # How to run
@@ -296,5 +328,5 @@ networks:
 ## Frontend: http://localhost:3000
 ## Backend: http://localhost:3001
 ## Database: http://localhost:8080
-* Login to pgAdmin with your credentials
+* Login to pgAdmin with your credentials (email and password from your .env file)
 * Tables are in: Server Group 1 => myProject => Schemas => public => Tables
