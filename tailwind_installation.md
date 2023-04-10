@@ -53,3 +53,20 @@ module.exports = {
     autoprefixer: {},
   }
 }
+
+* Components:
+
+# Add Flowbite
+## Frontend folder
+npm install flowbite flowbite-react
+
+## add to tailwind.config.js
+```js
+module.exports = {
+  plugins: [
+    require('flowbite/plugin')
+  ]
+}
+```
+
+* Components: https://flowbite-react.com/
